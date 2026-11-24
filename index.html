@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#171923">
+<meta name="description" content="A compact gear rolling simulator with manual stat locking and module tracking.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<title>Gear Forge</title>
+<style>
+:root{color-scheme:dark;--bg:#11131a;--panel:#1b1e29;--panel2:#242837;--line:#34394b;--text:#f3f4f8;--muted:#a6adbf;--accent:#b89cff;--green:#70d6a3;--red:#ff8e8e;--gold:#f4c96b}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at top,#25213b 0,#11131a 52%);color:var(--text);font:15px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;min-height:100vh}
+.app{max-width:760px;margin:auto;padding:22px 16px 48px}.top{display:flex;align-items:center;gap:13px;margin-bottom:20px}.logo{width:48px;height:48px;border-radius:15px;background:linear-gradient(145deg,#8f71d8,#493a75);display:grid;place-items:center;font-size:25px;box-shadow:0 8px 28px #0005}.top h1{font-size:22px;margin:0;letter-spacing:.04em}.sub{color:var(--muted);font-size:13px}.pill{margin-left:auto;border:1px solid var(--line);border-radius:999px;padding:5px 10px;color:var(--green);font-size:12px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:16px 0}.metric,.panel,.line-card{background:#1b1e29ed;border:1px solid var(--line);border-radius:16px}.metric{padding:13px}.metric small{display:block;color:var(--muted);font-size:12px}.metric strong{font-size:25px;font-variant-numeric:tabular-nums}
+.panel{padding:17px;margin:13px 0}.panel-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:13px}.panel h2{font-size:15px;margin:0}.hint{color:var(--muted);font-size:12px}
+.lines{display:grid;gap:10px}.line-card{padding:14px;background:#202431}.line-head{display:flex;justify-content:space-between;align-items:center}.line-name{font-size:12px;letter-spacing:.09em;color:var(--muted);font-weight:700}.chance{font-size:12px;color:var(--muted)}.stat-name{font-size:20px;font-weight:700;margin:8px 0 11px;min-height:29px}.empty{color:#788095;font-weight:500}.line-actions{display:flex;gap:8px;flex-wrap:wrap}.tag{font-size:11px;padding:4px 8px;border-radius:999px;border:1px solid var(--line);color:var(--muted)}.tag.target{color:var(--green);border-color:#397a60}.tag.locked{color:var(--gold);border-color:#806b36}
+button{font:inherit;cursor:pointer;border:0;border-radius:11px;padding:11px 14px;font-weight:700;transition:.15s}button:disabled{opacity:.4;cursor:not-allowed}.primary{width:100%;padding:15px;background:linear-gradient(100deg,#a88be9,#8064ca);color:#171323;font-size:16px;box-shadow:0 8px 24px #8064ca33}.secondary{background:var(--panel2);color:var(--text);border:1px solid var(--line)}.lock-btn{background:#27382f;color:var(--green);border:1px solid #397a60;padding:8px 11px;font-size:13px}.unlock-btn{background:#393124;color:var(--gold);border:1px solid #806b36;padding:8px 11px;font-size:13px}
+.costrow{display:flex;justify-content:space-between;align-items:center;background:#242837;border-radius:12px;padding:12px 14px;margin:13px 0}.costrow span{color:var(--muted);font-size:13px}.costrow strong{font-size:16px}
+.controls{display:flex;gap:9px;margin-top:10px}.controls button{flex:1}.notice{padding:12px;border-radius:12px;background:#24382f;border:1px solid #397a60;color:#a8f0c8;margin:12px 0}.warning{background:#3b3022;border-color:#806b36;color:#f4d99c}
+.target-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.target-box{background:#242837;padding:10px;border-radius:11px;text-align:center}.target-box small{display:block;color:var(--muted);font-size:11px}.target-box strong{font-size:15px}
+.history{max-height:300px;overflow:auto}.history-row{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid #303546;font-size:12px}.history-row:last-child{border:0}.history-result{min-width:0;overflow-wrap:anywhere}.history-cost{white-space:nowrap;color:var(--muted)}
+.settings{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.settings input{width:110px;background:#11131a;border:1px solid var(--line);border-radius:9px;padding:9px;color:var(--text);font:inherit}
+.footer{text-align:center;color:#7e8598;font-size:11px;margin-top:22px}
+@media(min-width:600px){.lines{grid-template-columns:repeat(3,1fr)}.line-card{min-height:174px}.stat-name{font-size:19px}}
+@media(max-width:420px){.metric strong{font-size:21px}.app{padding:16px 12px 35px}.panel{padding:13px}}
+</style>
+</head>
+<body>
+<main class="app">
+<header class="top">
+ <div class="logo">⚒</div><div><h1>GEAR FORGE</h1><div class="sub">Gear rolling companion</div></div>
+ <div class="pill" id="statusPill">READY</div>
+</header>
+<section class="stats">
+ <div class="metric"><small>Modules left</small><strong id="modules">1,000</strong></div>
+ <div class="metric"><small>Rolls</small><strong id="rolls">0</strong></div>
+ <div class="metric"><small>Modules spent</small><strong id="spent">0</strong></div>
+</section>
+<section class="panel">
+ <div class="panel-head"><h2>YOUR TARGET STATS</h2><span class="hint">Order doesn't matter</span></div>
+ <div class="target-grid">
+  <div class="target-box"><small>Target 1</small><strong>Stat 1 · 10%</strong></div>
+  <div class="target-box"><small>Target 2</small><strong>Stat 4 · 10%</strong></div>
+  <div class="target-box"><small>Target 3</small><strong>Stat 8 · 10%</strong></div>
+ </div>
+</section>
+<section class="panel">
+ <div class="panel-head"><h2>GEAR LINES</h2><span class="hint">Lock only a target stat</span></div>
+ <div class="lines" id="lines"></div>
+ <div class="costrow"><span>Next roll cost · <b id="lockCount">0 locked</b></span><strong id="nextCost">1 module</strong></div>
+ <button class="primary" id="rollBtn">🎲 &nbsp; ROLL GEAR</button>
+ <div class="controls"><button class="secondary" id="resetBtn">↻ Reset gear</button><button class="secondary" id="newSessionBtn">＋ New session</button></div>
+ <div id="message" aria-live="polite"></div>
+</section>
+<section class="panel">
+ <div class="panel-head"><h2>SESSION SETTINGS</h2><span class="hint">Saved on this device</span></div>
+ <div class="settings"><label for="startingModules" class="hint">Starting modules</label><input id="startingModules" type="number" min="0" step="1" value="1000"><button class="secondary" id="applyModules">Apply to new session</button></div>
+ <p class="hint">Line activation: Line 1 = 100% · Line 2 = 50% · Line 3 = 30%. A stat can appear only once per roll. Unlocked lines reroll; locked lines stay fixed.</p>
+</section>
+<section class="panel">
+ <div class="panel-head"><h2>ROLL HISTORY</h2><span class="hint" id="historyCount">0 entries</span></div>
+ <div class="history" id="history"><div class="hint">Your rolls will appear here.</div></div>
+</section>
+<div class="footer">Gear Forge · Offline-ready mini app</div>
+</main>
+<script>
+const STORAGE_KEY='gear-forge-v1';
+const statWeights=[10,12,12,10,12,12,12,10,10];
+const statNames=statWeights.map((_,i)=>`Stat ${i+1}`);
+const targetIds=[1,4,8], activation=[1,.5,.3];
+let state={starting:1000,modules:1000,spent:0,rolls:0,lines:[null,null,null],locked:[false,false,false],history:[],won:false};
+const $=id=>document.getElementById(id);
+function save(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(state));}catch(e){}}
+function load(){try{const s=JSON.parse(localStorage.getItem(STORAGE_KEY));if(s&&Array.isArray(s.lines)&&Array.isArray(s.locked))state={...state,...s};}catch(e){}}
+function fmt(n){return Number(n).toLocaleString('en-US');}
+function drawStat(used){
+ const pool=statWeights.map((w,i)=>({id:i+1,w})).filter(x=>!used.has(x.id));
+ const total=pool.reduce((a,x)=>a+x.w,0);let r=Math.random()*total;
+ for(const item of pool){r-=item.w;if(r<0)return item.id;}
+ return pool[pool.length-1]?.id??null;
+}
+function render(){
+ $('modules').textContent=fmt(state.modules);$('rolls').textContent=fmt(state.rolls);$('spent').textContent=fmt(state.spent);
+ const lockedCount=state.locked.filter(Boolean).length,cost=1+lockedCount;
+ $('lockCount').textContent=`${lockedCount} locked`;$('nextCost').textContent=`${cost} module${cost===1?'':'s'}`;
+ $('statusPill').textContent=state.won?'COMPLETED':'READY';
+ $('statusPill').style.color=state.won?'var(--green)':'var(--muted)';
+ $('lines').innerHTML=state.lines.map((v,i)=>{
+  const isTarget=v&&targetIds.includes(v);
+  const badge=state.locked[i]?'<span class="tag locked">LOCKED</span>':isTarget?'<span class="tag target">TARGET HIT</span>':v?'<span class="tag">NOT A TARGET</span>':'<span class="tag">EMPTY</span>';
+  let action='';
+  if(isTarget&&!state.locked[i]&&!state.won)action=`<button class="lock-btn" data-lock="${i}">🔒 Lock this line</button>`;
+  if(state.locked[i])action='<span class="hint">Preserved permanently</span>';
+  return `<article class="line-card"><div class="line-head"><span class="line-name">LINE ${i+1}</span><span class="chance">${[100,50,30][i]}% activation</span></div><div class="stat-name ${v?'':'empty'}">${v?`Stat ${v}`:'Empty'}</div><div class="line-actions">${badge}${action}</div></article>`;
+ }).join('');
+ document.querySelectorAll('[data-lock]').forEach(btn=>btn.addEventListener('click',()=>lockLine(Number(btn.dataset.lock))));
+ $('rollBtn').disabled=state.won||state.modules<cost||state.locked.every(Boolean);
+ $('rollBtn').textContent=state.won?'✓ GEAR COMPLETED':state.modules<cost?'NOT ENOUGH MODULES':'🎲  ROLL GEAR';
+ $('historyCount').textContent=`${state.history.length} entr${state.history.length===1?'y':'ies'}`;
+ $('history').innerHTML=state.history.length?state.history.slice(0,100).map(h=>`<div class="history-row"><span class="history-result">#${h.n}: ${h.lines.join(' / ')}</span><span class="history-cost">${h.cost} module${h.cost===1?'':'s'}</span></div>`).join(''):'<div class="hint">Your rolls will appear here.</div>';
+ if(state.won)$('message').innerHTML=`<div class="notice"><b>🎉 Gear completed!</b><br>All three target stats secured in ${state.rolls} rolls, spending ${fmt(state.spent)} modules.</div>`;
+ else if(state.modules<cost)$('message').innerHTML='<div class="notice warning">You do not have enough modules for the next roll. Start a new session to continue.</div>';
+ else $('message').innerHTML='';
+ $('startingModules').value=state.starting;
+}
+function lockLine(i){
+ if(state.won||state.locked[i]||!targetIds.includes(state.lines[i]))return;
+ state.locked[i]=true;save();render();
+}
+function roll(){
+ const cost=1+state.locked.filter(Boolean).length;
+ if(state.won||state.modules<cost||state.locked.every(Boolean))return;
+ const next=[...state.lines],used=new Set(state.lines.filter((v,i)=>state.locked[i]&&v!==null));
+ for(let i=0;i<3;i++){
+  if(state.locked[i])continue;
+  if(Math.random()>=activation[i]){next[i]=null;continue;}
+  next[i]=drawStat(used);
+  if(next[i]!==null)used.add(next[i]);
+ }
+ state.rolls++;state.modules-=cost;state.spent+=cost;state.lines=next;
+ state.won=next.every(v=>v!==null)&&targetIds.every(t=>next.includes(t));
+ state.history.unshift({n:state.rolls,lines:next.map(v=>v===null?'Empty':`Stat ${v}`),cost});
+ save();render();
+}
+function resetGear(){state.lines=[null,null,null];state.locked=[false,false,false];state.won=false;save();render();}
+function newSession(){
+ const amount=Math.max(0,Math.floor(Number($('startingModules').value)||0));
+ state={starting:amount,modules:amount,spent:0,rolls:0,lines:[null,null,null],locked:[false,false,false],history:[],won:false};save();render();
+}
+$('rollBtn').addEventListener('click',roll);
+$('resetBtn').addEventListener('click',resetGear);
+$('newSessionBtn').addEventListener('click',newSession);
+$('applyModules').addEventListener('click',()=>{state.starting=Math.max(0,Math.floor(Number($('startingModules').value)||0));save();$('message').innerHTML='<div class="notice">Starting amount saved. Press “New session” to apply it.</div>';});
+load();render();
+if('serviceWorker' in navigator && location.protocol!=='file:'){window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));}
+</script>
+</body>
+</html>
